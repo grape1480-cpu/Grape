@@ -22,6 +22,7 @@ interface CitizenViewProps {
   onOpenCheckIn: (stadium: Stadium, sport?: SportType) => void;
   onOpenDetail: (stadium: Stadium) => void;
   onOpenQr: (stadiumId: string) => void;
+  onOpenScanner: () => void;
 }
 
 export const CitizenView: React.FC<CitizenViewProps> = ({
@@ -29,6 +30,7 @@ export const CitizenView: React.FC<CitizenViewProps> = ({
   onOpenCheckIn,
   onOpenDetail,
   onOpenQr,
+  onOpenScanner,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedZone, setSelectedZone] = useState<string>('all');
@@ -93,6 +95,17 @@ export const CitizenView: React.FC<CitizenViewProps> = ({
             ตรวจสอบความจุสนามกีฬาทุกเขตในกรุงเทพมหานคร ลงทะเบียนเช็คอินผ่านสมาร์ทโฟน
             และรับการแจ้งเตือนความปลอดภัยเพื่อสุขภาพที่ดีของคนกรุงเทพฯ
           </p>
+
+          {/* Quick Action: Real Camera QR Scan */}
+          <div className="mt-4 flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={onOpenScanner}
+              className="px-4 py-2.5 bg-emerald-400 hover:bg-emerald-300 text-emerald-950 rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-emerald-950/20 flex items-center space-x-2"
+            >
+              <QrCode className="w-4 h-4 text-emerald-950" />
+              <span>📷 สแกน QR Code หน้าสนามจริง เพื่อเช็คอินทันที</span>
+            </button>
+          </div>
 
           {/* Quick Metrics Bar on Mobile */}
           <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-4 max-w-xl">

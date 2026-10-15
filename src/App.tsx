@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BangkokZone, CheckInRecord, Gender, SportType, Stadium } from './types/index.ts';
 import { BANGKOK_STADIUMS } from './data/bangkokDistricts.ts';
 import { INITIAL_CHECKINS } from './data/initialRecords.ts';
@@ -10,6 +10,7 @@ import { AdminDashboard } from './components/AdminDashboard.tsx';
 import { CheckInModal } from './components/CheckInModal.tsx';
 import { CheckInPassModal } from './components/CheckInPassModal.tsx';
 import { QRCodeGeneratorModal } from './components/QRCodeGeneratorModal.tsx';
+import { QRScannerModal } from './components/QRScannerModal.tsx';
 import { StadiumDetailModal } from './components/StadiumDetailModal.tsx';
 
 const STADIUMS_STORAGE_KEY = 'bma_stadiums_data_v1';
@@ -57,9 +58,13 @@ export default function App() {
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [checkInTargetStadium, setCheckInTargetStadium] = useState<Stadium | null>(null);
   const [preselectedSport, setPreselectedSport] = useState<SportType | undefined>(undefined);
+  const [isCheckInFromQr, setIsCheckInFromQr] = useState(false);
 
   const [isOpenQrModal, setIsOpenQrModal] = useState(false);
   const [qrStadiumId, setQrStadiumId] = useState<string | undefined>(undefined);
+
+  const [isOpenScannerModal, setIsOpenScannerModal] = useState(false);
+  const hasHandledUrlRef = useRef(false);
 
   const [selectedDetailStadium, setSelectedDetailStadium] = useState<Stadium | null>(null);
   const [isOpenPassModal, setIsOpenPassModal] = useState(false);
@@ -95,6 +100,8 @@ export default function App() {
 
   // Check URL params for QR Code scanned deep link
   useEffect(() => {
+    if (hasHandledUrlRef.current) return;
+
     try {
       const params = new URLSearchParams(window.location.search);
       const action = params.get('action');
@@ -102,13 +109,18 @@ export default function App() {
       const targetSport = params.get('sport') as SportType | null;
 
       if (action === 'checkin' && targetStadiumId) {
+        hasHandledUrlRef.current = true;
         const found = stadiums.find((s) => s.id === targetStadiumId);
         if (found) {
           setCheckInTargetStadium(found);
           if (targetSport) {
             setPreselectedSport(targetSport);
           }
+          setIsCheckInFromQr(true);
           setIsCheckInOpen(true);
+
+          // Clean URL so refresh doesn't force re-trigger
+          window.history.replaceState({}, '', window.location.pathname);
         }
       }
     } catch {
@@ -228,6 +240,7 @@ export default function App() {
           setQrStadiumId(undefined);
           setIsOpenQrModal(true);
         }}
+        onOpenScannerModal={() => setIsOpenScannerModal(true)}
         overcrowdedCount={overcrowdedCount}
         totalActiveUsers={totalActiveUsers}
       />
@@ -274,6 +287,7 @@ export default function App() {
             onOpenCheckIn={(stadium, sport) => {
               setCheckInTargetStadium(stadium);
               setPreselectedSport(sport);
+              setIsCheckInFromQr(false);
               setIsCheckInOpen(true);
             }}
             onOpenDetail={(stadium) => setSelectedDetailStadium(stadium)}
@@ -281,6 +295,7 @@ export default function App() {
               setQrStadiumId(stadiumId);
               setIsOpenQrModal(true);
             }}
+            onOpenScanner={() => setIsOpenScannerModal(true)}
           />
         ) : (
           <AdminDashboard
@@ -302,9 +317,12 @@ export default function App() {
         onClose={() => {
           setIsCheckInOpen(false);
           setCheckInTargetStadium(null);
+          setIsCheckInFromQr(false);
         }}
         stadium={checkInTargetStadium}
         allStadiums={stadiums}
+        initialSport={preselectedSport}
+        isFromQr={isCheckInFromQr}
         onConfirmCheckIn={handleConfirmCheckIn}
       />
 
@@ -327,6 +345,23 @@ export default function App() {
           if (target) {
             setCheckInTargetStadium(target);
             setPreselectedSport(sport);
+            setIsCheckInFromQr(true);
+            setIsCheckInOpen(true);
+          }
+        }}
+      />
+
+      {/* 4. Real Camera QR Scanner Modal */}
+      <QRScannerModal
+        isOpen={isOpenScannerModal}
+        onClose={() => setIsOpenScannerModal(false)}
+        stadiums={stadiums}
+        onDetected={(stadiumId, sport) => {
+          const target = stadiums.find((s) => s.id === stadiumId);
+          if (target) {
+            setCheckInTargetStadium(target);
+            setPreselectedSport(sport);
+            setIsCheckInFromQr(true);
             setIsCheckInOpen(true);
           }
         }}

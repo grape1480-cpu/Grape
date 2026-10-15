@@ -5,6 +5,7 @@ interface NavbarProps {
   currentView: 'citizen' | 'admin';
   onViewChange: (view: 'citizen' | 'admin') => void;
   onOpenQrModal: () => void;
+  onOpenScannerModal: () => void;
   overcrowdedCount: number;
   totalActiveUsers: number;
 }
@@ -13,6 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentView,
   onViewChange,
   onOpenQrModal,
+  onOpenScannerModal,
   overcrowdedCount,
   totalActiveUsers,
 }) => {
@@ -60,15 +62,27 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Actions & Role Navigation */}
           <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* Scan QR Code Button with Camera */}
+            <button
+              onClick={onOpenScannerModal}
+              aria-label="สแกน QR Code เพื่อลงทะเบียน"
+              className="flex items-center space-x-1.5 px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 rounded-lg text-xs sm:text-sm font-bold transition shadow-sm"
+              title="เปิดกล้องสแกน QR Code หน้าสนามจริง"
+            >
+              <QrCode className="w-4 h-4 text-emerald-950" />
+              <span className="hidden sm:inline">สแกน QR ลงทะเบียน</span>
+              <span className="sm:hidden">สแกน QR</span>
+            </button>
+
             {/* QR Code Generator Button */}
             <button
               onClick={onOpenQrModal}
               aria-label="สร้าง QR Code สนามกีฬา"
               className="flex items-center space-x-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs sm:text-sm font-medium transition shadow-sm border border-emerald-600"
+              title="สร้างป้าย QR Code สำหรับติดประจำจุด"
             >
-              <QrCode className="w-4 h-4 text-emerald-200" />
-              <span className="hidden sm:inline">สร้าง QR Code สนาม</span>
-              <span className="sm:hidden">QR</span>
+              <span className="hidden md:inline">สร้าง QR ประจำจุด</span>
+              <span className="md:hidden">ป้าย QR</span>
             </button>
 
             {/* View Switcher: Citizen vs Admin */}

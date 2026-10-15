@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, UserCheck, AlertTriangle, Clock, Users, ShieldCheck, HeartPulse } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, UserCheck, AlertTriangle, Clock, Users, ShieldCheck, HeartPulse, QrCode } from 'lucide-react';
 import { Gender, SportType, Stadium } from '../types/index.ts';
 import { SPORT_CATEGORIES } from '../data/bangkokDistricts.ts';
 import { calculateAgeGroup, getCapacityStatus } from '../utils/sportsLogic.ts';
@@ -9,6 +9,8 @@ interface CheckInModalProps {
   onClose: () => void;
   stadium: Stadium | null;
   allStadiums: Stadium[];
+  initialSport?: SportType;
+  isFromQr?: boolean;
   onConfirmCheckIn: (data: {
     stadiumId: string;
     userName: string;
@@ -26,17 +28,31 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
   onClose,
   stadium,
   allStadiums,
+  initialSport,
+  isFromQr,
   onConfirmCheckIn,
 }) => {
   const [selectedStadiumId, setSelectedStadiumId] = useState<string>(stadium ? stadium.id : allStadiums[0]?.id || '');
   const [age, setAge] = useState<number | ''>(25);
   const [gender, setGender] = useState<Gender>('ชาย');
-  const [sportType, setSportType] = useState<SportType>('ฟุตบอล / ฟุตซอล');
+  const [sportType, setSportType] = useState<SportType>(initialSport || 'ฟุตบอล / ฟุตซอล');
   const [durationMinutes, setDurationMinutes] = useState<number>(60);
   const [partySize, setPartySize] = useState<number>(1);
   const [userName, setUserName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
+
+  useEffect(() => {
+    if (stadium) {
+      setSelectedStadiumId(stadium.id);
+    }
+  }, [stadium]);
+
+  useEffect(() => {
+    if (initialSport) {
+      setSportType(initialSport);
+    }
+  }, [initialSport]);
 
   if (!isOpen) return null;
 
@@ -94,6 +110,17 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* QR Code Scanned Indicator Badge */}
+        {isFromQr && (
+          <div className="bg-emerald-500 text-white px-4 py-2 flex items-center justify-between text-xs font-semibold">
+            <div className="flex items-center space-x-1.5">
+              <QrCode className="w-4 h-4 animate-bounce" />
+              <span>สแกนผ่าน QR Code สำเร็จ: ระบุสนามและกีฬาให้อัตโนมัติ</span>
+            </div>
+            <span className="bg-white/20 px-2 py-0.5 rounded text-[10px]">ตรวจสอบแล้ว</span>
+          </div>
+        )}
 
         {/* Stadium Capacity Status Banner inside form */}
         {currentStadium && capacityStatus && (

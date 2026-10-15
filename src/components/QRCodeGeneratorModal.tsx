@@ -1,6 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { X, QrCode, Download, Printer, Copy, Check, ExternalLink, Building2, Smartphone } from 'lucide-react';
+import {
+  X,
+  QrCode,
+  Download,
+  Printer,
+  Copy,
+  Check,
+  ExternalLink,
+  Smartphone,
+  Globe,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 import { Stadium, SportType } from '../types/index.ts';
 
 interface QRCodeGeneratorModalProps {
@@ -10,6 +23,8 @@ interface QRCodeGeneratorModalProps {
   initialStadiumId?: string;
   onSimulateScanCheckIn: (stadiumId: string, sportType?: SportType) => void;
 }
+
+const PUBLIC_CLOUD_URL = 'https://ais-dev-bm6fqfc7iowerarh56bp2h-521379656397.asia-east1.run.app';
 
 export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
   isOpen,
@@ -23,7 +38,17 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
   );
   const [selectedSport, setSelectedSport] = useState<string>('all');
   const [isCopied, setIsCopied] = useState(false);
-  const [isPosterMode, setIsPosterMode] = useState(false);
+  const [customHost, setCustomHost] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const isLocal =
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1';
+      return isLocal ? PUBLIC_CLOUD_URL : window.location.origin;
+    }
+    return PUBLIC_CLOUD_URL;
+  });
+  const [showHostSettings, setShowHostSettings] = useState(false);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -34,9 +59,9 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
 
   const currentStadium = stadiums.find((s) => s.id === selectedStadiumId) || stadiums[0];
 
-  // Construct target registration URL
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : 'https://bma-sports.bangkok.go.th';
-  const qrTargetUrl = `${baseUrl}?action=checkin&stadiumId=${encodeURIComponent(
+  // Construct target registration URL that smartphone cameras will load
+  const cleanBaseHost = customHost.trim().replace(/\/+$/, '');
+  const qrTargetUrl = `${cleanBaseHost}/?action=checkin&stadiumId=${encodeURIComponent(
     selectedStadiumId
   )}${selectedSport !== 'all' ? `&sport=${encodeURIComponent(selectedSport)}` : ''}`;
 
@@ -47,10 +72,11 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
       canvasRef.current,
       qrTargetUrl,
       {
-        width: 260,
+        width: 270,
         margin: 2,
+        errorCorrectionLevel: 'H',
         color: {
-          dark: '#064e3b', // Deep emerald
+          dark: '#064e3b', // Deep BMA emerald
           light: '#ffffff',
         },
       },
@@ -58,14 +84,14 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
         if (err) console.error('Error generating QR code:', err);
       }
     );
-  }, [isOpen, qrTargetUrl, currentStadium, isPosterMode]);
+  }, [isOpen, qrTargetUrl, currentStadium]);
 
   if (!isOpen || !currentStadium) return null;
 
   const handleDownload = () => {
     if (!canvasRef.current) return;
     const link = document.createElement('a');
-    link.download = `QR_CheckIn_${currentStadium.districtName}_${selectedSport}.png`;
+    link.download = `QR_BMA_${currentStadium.districtName}_${selectedSport}.png`;
     link.href = canvasRef.current.toDataURL('image/png');
     link.click();
   };
@@ -80,6 +106,10 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
     window.print();
   };
 
+  const handleOpenLinkInNewTab = () => {
+    window.open(qrTargetUrl, '_blank');
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
       <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
@@ -90,8 +120,8 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
               <QrCode className="w-5 h-5 text-emerald-200" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold">สร้างคิวอาร์โค้ดลงทะเบียน (QR Code Generator)</h2>
-              <p className="text-xs text-emerald-100">สำหรับติดป้ายหน้าสนามกีฬา หรือประจำคอร์ทกีฬา</p>
+              <h2 className="text-base sm:text-lg font-bold">คิวอาร์โค้ดลงทะเบียนเข้าสนามกีฬา</h2>
+              <p className="text-xs text-emerald-100">รองรับการสแกนด้วยกล้องสมาร์ทโฟนจริง 100%</p>
             </div>
           </div>
           <button
@@ -117,7 +147,7 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
               >
                 {stadiums.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name} ({s.districtName})
+                    {s.name} (เขต{s.districtName})
                   </option>
                 ))}
               </select>
@@ -143,41 +173,90 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
           </div>
 
           {/* QR Code Poster Preview Box */}
-          <div className="bg-gradient-to-b from-slate-50 to-emerald-50/40 p-5 rounded-2xl border border-emerald-100 text-center flex flex-col items-center">
+          <div className="bg-gradient-to-b from-slate-50 to-emerald-50/50 p-5 rounded-2xl border-2 border-emerald-200/80 text-center flex flex-col items-center shadow-xs">
             {/* Poster Header */}
-            <div className="mb-3">
+            <div className="mb-2">
               <span className="inline-block px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold tracking-wide uppercase mb-1">
                 กรุงเทพมหานคร • BMA SPORTS
               </span>
               <h3 className="font-bold text-slate-900 text-base sm:text-lg">
                 {currentStadium.name}
               </h3>
-              <p className="text-xs text-emerald-700 font-medium">
+              <p className="text-xs text-emerald-700 font-semibold mt-0.5">
                 {selectedSport === 'all'
-                  ? 'จุดลงทะเบียนทางเข้าหลัก'
-                  : `จุดลงทะเบียนโซน: ${selectedSport}`}
+                  ? 'จุดลงทะเบียนทางเข้าหลัก (General Entry)'
+                  : `จุดลงทะเบียน: ${selectedSport}`}
               </p>
             </div>
 
             {/* QR Canvas */}
-            <div className="p-3 bg-white rounded-2xl shadow-md border-2 border-emerald-600 inline-block">
+            <div className="p-3 bg-white rounded-2xl shadow-md border-2 border-emerald-600 inline-block my-1">
               <canvas ref={canvasRef} className="rounded-lg max-w-full" />
             </div>
 
-            <p className="mt-3 text-xs sm:text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-              <Smartphone className="w-4 h-4 text-emerald-600 inline" />
-              <span>ใช้กล้องมือถือสแกน เพื่อลงทะเบียนเข้าใช้สนาม</span>
-            </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              ไม่ต้องโหลดแอพ • บันทึกอายุและประเภทกีฬา • ตรวจสอบความจุแบบเรียลไทม์
-            </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-xs sm:text-sm font-bold text-slate-900 flex items-center justify-center gap-1.5">
+                <Smartphone className="w-4 h-4 text-emerald-600 inline flex-shrink-0" />
+                <span>ใช้กล้องสมาร์ทโฟนสแกน เพื่อลงทะเบียนเข้าใช้สนาม</span>
+              </p>
+              <p className="text-[11px] text-slate-500">
+                สแกนแล้วจะเปิดหน้าลงทะเบียนพร้อมระบุสนามและประเภทกีฬาให้อัตโนมัติ
+              </p>
+            </div>
+
+            {/* Live encoded URL display & tester */}
+            <div className="mt-3 w-full bg-white/90 p-2.5 rounded-xl border border-emerald-200/70 text-left text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                  <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>ลิงก์ที่ถูกฝังใน QR Code:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowHostSettings(!showHostSettings)}
+                  className="text-[11px] text-emerald-700 hover:text-emerald-900 font-medium flex items-center gap-1"
+                >
+                  <Settings className="w-3 h-3" />
+                  <span>{showHostSettings ? 'ซ่อนการตั้งค่าโฮสต์' : 'เปลี่ยนโดเมน'}</span>
+                </button>
+              </div>
+
+              <div className="font-mono text-[11px] text-emerald-900 bg-emerald-50/60 p-1.5 rounded-lg break-all select-all border border-emerald-100">
+                {qrTargetUrl}
+              </div>
+
+              {/* Optional Custom Host Configurator for external testing */}
+              {showHostSettings && (
+                <div className="pt-2 border-t border-slate-100 space-y-1.5 animate-in fade-in">
+                  <label className="block text-[11px] font-semibold text-slate-600">
+                    URL โฮสต์ปลายทาง (เปลี่ยนได้หากมีโดเมนเฉพาะ):
+                  </label>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={customHost}
+                      onChange={(e) => setCustomHost(e.target.value)}
+                      placeholder="https://your-domain.com"
+                      className="flex-1 px-2.5 py-1 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCustomHost(PUBLIC_CLOUD_URL)}
+                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-medium"
+                    >
+                      ใช้ Cloud Run URL
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Action Buttons */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
             <button
               onClick={handleDownload}
-              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition shadow-xs"
+              className="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition shadow-xs"
             >
               <Download className="w-4 h-4" />
               <span>ดาวน์โหลด PNG</span>
@@ -185,7 +264,7 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
 
             <button
               onClick={handleCopyLink}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-medium flex items-center justify-center space-x-1.5 transition border border-slate-200"
+              className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-medium flex items-center justify-center space-x-1.5 transition border border-slate-200"
             >
               {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               <span>{isCopied ? 'คัดลอกแล้ว!' : 'คัดลอกลิงก์'}</span>
@@ -193,7 +272,7 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
 
             <button
               onClick={handlePrint}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-medium flex items-center justify-center space-x-1.5 transition border border-slate-200"
+              className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-medium flex items-center justify-center space-x-1.5 transition border border-slate-200"
             >
               <Printer className="w-4 h-4" />
               <span>พิมพ์ป้าย A4</span>
@@ -207,10 +286,10 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
                 );
                 onClose();
               }}
-              className="px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition"
+              className="px-3 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition shadow-xs"
             >
-              <ExternalLink className="w-4 h-4 text-teal-600" />
-              <span>ทดสอบสแกนทันที</span>
+              <Sparkles className="w-4 h-4 text-teal-200" />
+              <span>ทดสอบลงทะเบียน</span>
             </button>
           </div>
         </div>
