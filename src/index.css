@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Sarabun:wght@400;500;600;700&display=swap');
+
+@theme {
+  --font-sans: 'Prompt', 'Sarabun', 'Garuda', 'Loma', 'Waree', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    @apply bg-slate-50 text-slate-900 antialiased selection:bg-emerald-500 selection:text-white;
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "BMA Sports Track - ระบบเช็คอินและติดตามความหนาแน่นสนามกีฬา กทม.",
+  "description": "ระบบลงทะเบียนผู้เข้าใช้งานสนามกีฬา 50 เขต กรุงเทพมหานคร พร้อมสถิติการใช้งานแบบเรียลไทม์ แจ้งเตือนความหนาแน่น และสร้าง QR Code",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
